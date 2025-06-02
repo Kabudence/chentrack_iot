@@ -1,0 +1,224 @@
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- ENUMS ----------
+enum SensorType {
+  TEMPERATURE
+  GAS
+  PRESSURE
+  LEVEL
+  MOTION
+  FATIGUE
+  GPS
+}
+
+enum StatusAvailability {
+  AVAILABLE
+  NOTAVAILABLE
+}
+
+enum ServiceStatus {
+  ACTIVE        // en curso
+  PAUSED
+  FINISHED      // finalizado sin incidente
+  CANCELLED
+  INCIDENT      // finalizado con incidente
+}
+
+enum RecordStatus {
+  NORMAL
+  ANOMALOUS
+  CRITICAL
+}
+
+enum NotificationType {
+  ALERT   // requiere atención inmediata
+  INFO    // informativa
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  ACKNOWLEDGED
+  FAILED
+}
+
+// ---------- BASE USER ----------
+model User {
+  id        Int      @id @default(autoincrement())
+  password  String
+  email     String   @unique
+  profile   Profile?
+}
+
+// ---------- PERFIL (BASE) ----------
+model Profile {
+  id              Int      @id @default(autoincrement())
+  firstName       String
+  lastName        String
+  address         String
+  emergencyPhone  String?
+  dateBirth       DateTime
+  dni             String   @unique
+
+  // FK a User
+  userId   Int   @unique
+  user     User  @relation(fields: [userId], references: [id])
+
+  driver   Driver?
+  company  Company?
+}
+
+// ---------- DRIVER (sub-tipo) ----------
+model Driver {
+  id              Int      @id @default(autoincrement())
+  license         String
+  availability    StatusAvailability @default(AVAILABLE)
+
+  // 1-a-1 con Profile
+  profileId Int @unique
+  profile   Profile @relation(fields: [profileId], references: [id])
+
+  cars     Car[]
+  services Service[]
+}
+
+// ---------- COMPANY (sub-tipo) ----------
+model Company {
+  id          Int    @id @default(autoincrement())
+  socialName  String
+  ruc         String  @unique
+
+  profileId Int @unique
+  profile   Profile @relation(fields: [profileId], references: [id])
+
+  services  Service[]
+}
+
+// ---------- VEHÍCULOS ----------
+model Car {
+  id        Int      @id @default(autoincrement())
+  plate     String   @unique
+  brand     String
+  model     String
+  year      Int
+  type      String   // cisterna, camión, etc.
+  capacity  Float
+  state     StatusAvailability @default(AVAILABLE)
+
+  driverId  Int
+  driver    Driver  @relation(fields: [driverId], references: [id])
+
+  sensors   Sensor[]
+  services  Service[]
+}
+
+// ---------- SENSORES ----------
+model Sensor {
+  id           Int        @id @default(autoincrement())
+  name         String
+  type         SensorType
+  unidad       String?     // °C, ppm, psi, etc.
+
+  // Parámetros genéricos u opcionales (STI)
+  precision    Float?
+  rangeMin     Float?
+  rangeMax     Float?
+  typeGas      String?
+  threshold    Float?
+  sensitivity  Float?
+  metodoMed    String?
+  // GPS snapshot (para último valor)
+  lat          Float?
+  lon          Float?
+  alt          Float?
+  speed        Float?
+  lastSeenAt   DateTime?   // timestamp último valor
+
+  // Polymorphic owner
+  ownerType    String      // "CAR" | "DRIVER"
+  ownerId      Int
+  // car relationships
+  carId  Int
+  car    Car @relation(fields: [carId], references: [id])
+
+  records      Record[]
+  @@index([ownerType, ownerId])
+}
+
+// ---------- SERVICIO / VIAJE ----------
+model Service {
+  id               Int           @id @default(autoincrement())
+  status           ServiceStatus @default(ACTIVE)
+  origin           String
+  destiny          String
+  dateRequest      DateTime      // solicitud
+  dateStart        DateTime?
+  dateEnd          DateTime?
+  productType      String
+  productQty       Float
+  productUnit      String
+
+  // relaciones
+  carId            Int
+  car              Car       @relation(fields: [carId], references: [id])
+  driverId         Int
+  driver           Driver    @relation(fields: [driverId], references: [id])
+  companyId        Int
+  company          Company   @relation(fields: [companyId], references: [id])
+
+  records          Record[]
+  notifications    Notification[]
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// ---------- HISTÓRICO DE LECTURAS ----------
+model Record {
+  id          Int          @id @default(autoincrement())
+  timestamp   DateTime
+  sensorId    Int
+  sensor      Sensor       @relation(fields: [sensorId], references: [id])
+  serviceId   Int
+  service     Service      @relation(fields: [serviceId], references: [id])
+  value       Float
+  status      RecordStatus
+
+  // datos extendidos (nullable)
+  lat         Float?
+  lon         Float?
+  description String?
+
+  notifications Notification[]
+
+  @@index([serviceId, timestamp])
+  @@index([sensorId, timestamp])
+}
+
+// ---------- NOTIFICACIONES ----------
+model Notification {
+  id           Int                @id @default(autoincrement())
+  message      String
+  type         NotificationType
+  status       NotificationStatus @default(PENDING)
+  createdAt    DateTime           @default(now())
+  sentAt       DateTime?
+
+  // Relaciones (todas opcionales)
+  recordId     Int?
+  record       Record?    @relation(fields: [recordId], references: [id])
+  serviceId    Int?
+  service      Service?   @relation(fields: [serviceId], references: [id])
+
+  @@index([serviceId])
+  @@index([recordId])
+}
