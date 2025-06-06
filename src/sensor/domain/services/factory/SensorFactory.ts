@@ -10,6 +10,7 @@ import { MotionSensor } from "../../entities/MotionSensor";
 import { GasType } from "../../value-objects/GasType";
 import { Sensor } from "../../entities/Sensor";
 import {OwnerRef} from "../../value-objects/OwnerRef";
+import {CreateSensorDTO} from "../../../application/commands/dto/CreateSensorDTO";
 
 export class SensorFactory {
     static createFromPrisma(saved: any): Sensor {
@@ -104,4 +105,97 @@ export class SensorFactory {
                 throw new Error(`Cannot instantiate unknown Sensor type: ${saved.type}`);
         }
     }
+    static createFromDto(dto: CreateSensorDTO) {
+        const typeVO = SensorType.create(dto.type as SensorTypeEnum);
+        const sensorIdVO = SensorId.create(dto.sensorId);
+        const ownerVO = OwnerRef.create(dto.ownerId, dto.ownerType );
+
+        switch (dto.type) {
+            case SensorTypeEnum.GPS:
+                return new GPSSensor(
+                    undefined, // id aún no existe
+                    sensorIdVO,
+                    dto.name,
+                    typeVO,
+                    dto.precisionValue,
+                    dto.value,
+                    ownerVO,
+                    dto.timestamp,
+                    dto.minRangeToRead,
+                    dto.maxRangeValue,
+                    dto.latitude,
+                    dto.longitude
+                );
+            case SensorTypeEnum.GAS:
+                return new GasSensor(
+                    undefined,
+                    sensorIdVO,
+                    dto.name,
+                    typeVO,
+                    dto.precisionValue,
+                    dto.value,
+                    ownerVO,
+                    dto.timestamp,
+                    dto.minRangeToRead,
+                    dto.maxRangeValue,
+                    dto.gasType as GasType
+                );
+            // ...otros casos...
+            case SensorTypeEnum.PRESSURE:
+                return new PressureSensor(
+                    undefined,
+                    sensorIdVO,
+                    dto.name,
+                    typeVO,
+                    dto.precisionValue,
+                    dto.value,
+                    ownerVO,
+                    dto.timestamp,
+                    dto.minRangeToRead,
+                    dto.maxRangeValue
+                );
+            case SensorTypeEnum.TEMPERATURE:
+                return new TemperatureSensor(
+                    undefined,
+                    sensorIdVO,
+                    dto.name,
+                    typeVO,
+                    dto.precisionValue,
+                    dto.value,
+                    ownerVO,
+                    dto.timestamp,
+                    dto.minRangeToRead,
+                    dto.maxRangeValue
+                );
+            case SensorTypeEnum.LEVEL:
+                return new LevelSensor(
+                    undefined,
+                    sensorIdVO,
+                    dto.name,
+                    typeVO,
+                    dto.precisionValue,
+                    dto.value,
+                    ownerVO,
+                    dto.timestamp,
+                    dto.minRangeToRead,
+                    dto.maxRangeValue
+                );
+            case SensorTypeEnum.MOTION:
+                return new MotionSensor(
+                    undefined,
+                    sensorIdVO,
+                    dto.name,
+                    typeVO,
+                    dto.precisionValue,
+                    dto.value,
+                    ownerVO,
+                    dto.timestamp,
+                    dto.minRangeToRead,
+                    dto.maxRangeValue
+                );
+            default:
+                throw new Error(`Unknown sensor type: ${dto.type}`);
+        }
+    }
+
 }
