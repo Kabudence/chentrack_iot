@@ -29,6 +29,7 @@ constructor( id: number | undefined,sensorId: SensorId, name: string, type: Sens
     this.minRangeToRead = minRangeToRead;
     this.maxRangeValue = maxRangeToRead;
 
+
 }
 public abstract validateValue():ReadingStatus;
 

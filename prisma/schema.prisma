@@ -20,6 +20,7 @@ enum SensorType {
   GPS
 }
 
+
 enum StatusAvailability {
   AVAILABLE
   NOTAVAILABLE
@@ -88,6 +89,7 @@ model Driver {
   profile   Profile @relation(fields: [profileId], references: [id])
 
   cars     Car[]
+  sensors Sensor[]
   services Service[]
 }
 
@@ -121,39 +123,45 @@ model Car {
   services  Service[]
 }
 
+
+
+
 // ---------- SENSORES ----------
 model Sensor {
   id           Int        @id @default(autoincrement())
   sensorId     String
   name         String
   type         SensorType
-  unidad       String?     // °C, ppm, psi, etc.
+  timestamp    DateTime
+  precisionValue    Float
+  value        Float
+  rangeMin     Float
+  rangeMax     Float
 
   // Parámetros genéricos u opcionales (STI)
-  precision    Float?
-  rangeMin     Float?
-  rangeMax     Float?
   typeGas      String?
-  threshold    Float?
-  sensitivity  Float?
-  methodMea    String?
-  // GPS snapshot (para último valor)
-  latitude          Float?
-  lon          Float?
-  alt          Float?
-  speed        Float?
-  lastSeenAt   DateTime?   // timestamp último valor
+  latitude     Float?
+  longitude     Float?
 
-  // Polymorphic owner
-  ownerType    String      // "CAR" | "DRIVER"
-  ownerId      Int
-  // car relationships
-  carId  Int
-  car    Car @relation(fields: [carId], references: [id])
+  // --- Relaciones ---
+  carId     Int?    // FK opcional
+  car       Car?    @relation(fields: [carId], references: [id])
+
+  driverId  Int?    // FK opcional
+  driver    Driver? @relation(fields: [driverId], references: [id])
 
   records      Record[]
-  @@index([ownerType, ownerId])
 }
+
+
+
+
+
+
+
+
+
+
 
 // ---------- SERVICIO / VIAJE ----------
 model Service {

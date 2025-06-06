@@ -3,8 +3,9 @@ import {Sensor} from "../../domain/entities/Sensor";
 import {GPSSensor} from "../../domain/entities/GPSSensor";
 import {GasSensor} from "../../domain/entities/GasSensor";
 import {SensorFactory} from "../../domain/services/factory/SensorFactory";
+import {SensorRepository} from "../../domain/repository/SensorRepository";
 
-export class SensorPrismaRepository implements  SensorPrismaRepository {
+export class SensorPrismaRepository implements  SensorRepository {
     private prisma = new PrismaClient();
 
 
@@ -35,7 +36,6 @@ export class SensorPrismaRepository implements  SensorPrismaRepository {
 
         return SensorFactory.createFromPrisma(saved);
     }
-
     async findById(id: number): Promise<Sensor | null> {
         const found = await this.prisma.sensor.findUnique({ where: { id } });
         if (!found) return null;
