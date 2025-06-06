@@ -124,6 +124,7 @@ model Car {
 // ---------- SENSORES ----------
 model Sensor {
   id           Int        @id @default(autoincrement())
+  sensorId     String
   name         String
   type         SensorType
   unidad       String?     // °C, ppm, psi, etc.
@@ -135,9 +136,9 @@ model Sensor {
   typeGas      String?
   threshold    Float?
   sensitivity  Float?
-  metodoMed    String?
+  methodMea    String?
   // GPS snapshot (para último valor)
-  lat          Float?
+  latitude          Float?
   lon          Float?
   alt          Float?
   speed        Float?
